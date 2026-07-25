@@ -11,3 +11,326 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+// Create Database Schema
+
+enum Role {
+  ADMIN
+  COUNSELOR
+  CLIENT
+  ROOT
+}
+
+enum SessionType {
+  ONLINE
+  OFFLINE
+}
+
+enum DayOfWeek {
+  MON
+  TUE
+  WED
+  THU
+  FRI
+  SAT
+  SUN
+}
+
+enum AppointmentStatus {
+  PENDING
+  AWAITING_PAYMENT
+  PAYMENT_UPLOADED
+  PAYMENT_VERIFIED
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  PENDING_RESCHEDULE
+  REJECTED_SCHEDULE
+}
+
+enum CancelledBy {
+  CLIENT
+  COUNSELOR
+  ADMIN
+}
+
+enum PaymentProofStatus {
+  SUBMITTED
+  VERIFIED
+  REJECTED
+}
+
+enum NotificationType {
+  APPOINTMENT_REMINDER
+  PAYMENT_CONFIRMED
+  PAYMENT_REJECTED
+  SESSION_CANCELLED
+  NEW_BOOKING
+  GENERAL
+}
+
+// User model
+model User {
+  id               String    @id @default(uuid())
+  email            String    @unique
+  password         String
+  fullName         String?
+  role             Role      @default(CLIENT)
+  phone            String?
+  dateOfBirth      DateTime?
+  emergencyContact String?
+  avatarUrl        String?
+  counselorId      String?   @unique
+  isActive         Boolean   @default(true)
+  refreshToken     String?
+
+  // Relations
+  counselorProfile CounselorProfile? @relation(fields: [counselorId], references: [id])
+  notifications    Notification[]
+  appointments     Appointment[]
+
+  // Audit
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String
+  updatedBy String
+
+  @@index([email])
+  @@map("users")
+}
+
+// CounselorProfile model
+model CounselorProfile {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  licenseNumber String   @unique
+  availability  String[]
+  rating        Decimal  @default(0) @db.Decimal(10, 2)
+  reviewCount   Int      @default(0)
+  languages     String[]
+  isAvailable   Boolean  @default(true)
+
+  // Relations
+  user                     User?
+  counselorSpecializations CounselorSpecialization[]
+  sessionTypeConfigs       SessionTypeConfig[]
+  appointments             Appointment[]
+  counselorSchedules       CounselorSchedule[]
+
+  // Audit
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String
+  updatedBy String
+
+  @@index([userId])
+  @@map("counselor_profiles")
+}
+
+// Specialization model
+model Specialization {
+  id          String  @id @default(uuid())
+  name        String  @unique
+  description String?
+
+  // Relations
+  counselorSpecializations CounselorSpecialization[]
+
+  // Audit
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String
+  updatedBy String
+
+  @@map("specializations")
+}
+
+// AppointmentSessionType model
+model AppointmentSessionType {
+  id              String  @id @default(uuid())
+  name            String
+  durationMinutes Int
+  price           Decimal @db.Decimal(10, 2)
+  tier            Int
+  isOnline        Boolean
+
+  // Relations
+  sessionTypeConfigs SessionTypeConfig[]
+
+  // Audit
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String
+  updatedBy String
+
+  @@index([isOnline])
+  @@map("appointment_session_types")
+}
+
+// Notification model
+model Notification {
+  id      String           @id @default(uuid())
+  userId  String
+  type    NotificationType
+  title   String
+  message String
+  isRead  Boolean          @default(false)
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Audit
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([isRead])
+  @@map("notifications")
+}
+
+// CounselorSchedule model
+model CounselorSchedule {
+  id          String    @id @default(uuid())
+  counselorId String
+  dayOfWeek   DayOfWeek
+  startTime   String // "HH:MM" format
+  endTime     String // "HH:MM" format
+
+  // Relations
+  counselor CounselorProfile @relation(fields: [counselorId], references: [id], onDelete: Cascade)
+
+  // Audit
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String
+  updatedBy String
+
+  @@unique([counselorId, dayOfWeek, startTime])
+  @@index([counselorId, dayOfWeek])
+  @@map("counselor_schedules")
+}
+
+// CounselorSpecialization model (Join Table)
+model CounselorSpecialization {
+  id               String @id @default(uuid())
+  counselorId      String
+  specializationId String
+
+  // Relations
+  counselor      CounselorProfile @relation(fields: [counselorId], references: [id], onDelete: Cascade)
+  specialization Specialization   @relation(fields: [specializationId], references: [id], onDelete: Cascade)
+
+  // Audit (reduced — no updatedAt since assignments are create/delete only)
+  createdAt DateTime @default(now())
+  createdBy String
+
+  @@unique([counselorId, specializationId])
+  @@index([counselorId])
+  @@index([specializationId])
+  @@map("counselor_specializations")
+}
+
+// SessionTypeConfig model
+model SessionTypeConfig {
+  id                       String      @id @default(uuid())
+  counselorId              String
+  sessionType              SessionType
+  appointmentSessionTypeId String
+  clinicAddress            String? // Only applicable for OFFLINE sessions
+
+  // Relations
+  counselor              CounselorProfile       @relation(fields: [counselorId], references: [id], onDelete: Cascade)
+  appointmentSessionType AppointmentSessionType @relation(fields: [appointmentSessionTypeId], references: [id], onDelete: Cascade)
+
+  // Audit
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String
+  updatedBy String
+
+  @@unique([counselorId, sessionType])
+  @@index([counselorId])
+  @@index([appointmentSessionTypeId])
+  @@map("session_type_configs")
+}
+
+// Appointment model
+model Appointment {
+  id                String            @id @default(uuid())
+  clientId          String
+  counselorId       String
+  sessionType       SessionType
+  date              DateTime
+  time              String
+  endTime           String
+  durationMinutes   Int
+  rate              Decimal           @db.Decimal(10, 2)
+  status            AppointmentStatus @default(PENDING)
+  meetingLink       String?
+  notes             String?
+  referenceCode     String?
+  cancellationNotes String?
+  cancelledAt       DateTime?
+  cancelledBy       CancelledBy?
+
+  // Relations
+  client       User             @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  counselor    CounselorProfile @relation(fields: [counselorId], references: [id], onDelete: Cascade)
+  paymentProof PaymentProof?
+  review       Review?
+
+  // Audit
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String
+  updatedBy String
+
+  @@index([clientId])
+  @@index([counselorId])
+  @@index([status])
+  @@index([date])
+  @@map("appointments")
+}
+
+// PaymentProof model
+model PaymentProof {
+  id              String             @id @default(uuid())
+  appointmentId   String             @unique
+  filename        String
+  submittedAt     DateTime
+  status          PaymentProofStatus @default(SUBMITTED)
+  rejectionReason String?
+
+  // Relations
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  // Audit
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String
+  updatedBy String
+
+  @@index([status])
+  @@map("payment_proofs")
+}
+
+// Review model
+model Review {
+  id            String  @id @default(uuid())
+  appointmentId String  @unique
+  rating        Int
+  comment       String?
+
+  // Relations
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  // Audit
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String
+  updatedBy String
+
+  @@index([rating])
+  @@map("reviews")
+}
