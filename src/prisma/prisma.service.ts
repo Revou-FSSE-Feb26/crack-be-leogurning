@@ -1,28 +1,50 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient } from '@prisma/client';
 import { log } from 'console';
-import { PrismaClientRepository } from './prisma.repository';
 
 @Injectable()
-export class PrismaService implements OnModuleInit, OnModuleDestroy {
-  constructor(
-    private readonly prismaClientRepository: PrismaClientRepository,
-  ) {}
+export class PrismaService
+  extends PrismaClient
+  implements OnModuleInit, OnModuleDestroy
+{
+  constructor() {
+    const adapter = new PrismaPg({
+      connectionString: process.env.DATABASE_URL,
+    });
+    super({
+      adapter,
+      log:
+        process.env.NODE_ENV === 'development'
+          ? ['query', 'info', 'warn', 'error']
+          : ['error'],
+    });
+  }
 
   async onModuleInit() {
-    await this.prismaClientRepository.dbConnect();
+    await this.$connect();
     log('Connected to DB successfully');
   }
 
   async onModuleDestroy() {
-    await this.prismaClientRepository.dbDisconnect();
+    await this.$disconnect();
     log('Disconnected from DB');
   }
 
   async cleanDatabase() {
-    try {
-      await this.prismaClientRepository.cleanDatabase();
-    } catch (error) {
-      log(error);
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('Cannot clean database in production environment');
     }
+    const models = Reflect.ownKeys(this).filter(
+      (key) => typeof key === 'string' && !key.startsWith('_'),
+    );
+
+    return Promise.all(
+      models.map((modelKey) => {
+        if (typeof modelKey === 'string') {
+          return this[modelKey].deleteMany();
+        }
+      }),
+    );
   }
 }
