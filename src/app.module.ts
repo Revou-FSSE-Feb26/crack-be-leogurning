@@ -5,10 +5,24 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { AppointmentsModule } from './modules/appointments/appointments.module';
 import { ConfigModule } from '@nestjs/config';
+import { ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
+    ThrottlerModule.forRoot([
+      // {
+      //   name: 'short',
+      //   ttl: 1000, // 1 second
+      //   limit: 3, // max 3 requests per second
+      // },
+      {
+        name: 'long',
+        ttl: 60000, // 1 minute
+        //limit: 100, // max 100 requests per minute
+        limit: 10,
+      },
+    ]),
     PrismaModule,
     AuthModule,
     AppointmentsModule,
