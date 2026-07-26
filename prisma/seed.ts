@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 import {
   users,
   counselorProfiles,
@@ -15,10 +16,21 @@ import {
   notifications,
 } from './data';
 
+const SALT_ROUNDS = 12;
+
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL,
 });
 const prisma = new PrismaClient({ adapter });
+
+async function hashPasswords(usersData: typeof users): Promise<typeof users> {
+  return Promise.all(
+    usersData.map(async (user) => ({
+      ...user,
+      password: await bcrypt.hash(user.password, SALT_ROUNDS),
+    })),
+  );
+}
 
 async function main() {
   console.log('🌱 Starting database seed...\n');
@@ -37,10 +49,16 @@ async function main() {
   await prisma.specialization.deleteMany();
   await prisma.user.deleteMany();
 
-  // 2. Seed Users (without counselorId first to avoid circular FK dependency)
-  const usersWithoutCounselorId = users.map(({ counselorId, ...rest }) => rest);
+  // 2. Hash passwords and seed Users (without counselorId first to avoid circular FK dependency)
+  console.log('Hashing passwords...');
+  const usersWithHashedPasswords = await hashPasswords(users);
+  const usersWithoutCounselorId = usersWithHashedPasswords.map(
+    ({ counselorId, ...rest }) => rest,
+  );
   await prisma.user.createMany({ data: usersWithoutCounselorId as any });
-  console.log(`✓ Seeded ${users.length} users`);
+  console.log(
+    `✓ Seeded ${users.length} users (passwords hashed with bcrypt, ${SALT_ROUNDS} rounds)`,
+  );
 
   // 3. Seed Specializations
   await prisma.specialization.createMany({ data: specializations as any });
