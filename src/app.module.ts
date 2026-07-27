@@ -10,6 +10,7 @@ import { SessionTypesModule } from './modules/session-types/session-types.module
 import { CounselorsModule } from './modules/counselors/counselors.module';
 import { CounselorProfileModule } from './modules/counselor-profile/counselor-profile.module';
 import { CounselorSchedulesModule } from './modules/counselor-schedules/counselor-schedules.module';
+import { PaymentProofsModule } from './modules/payment-proofs/payment-proofs.module';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 
@@ -38,6 +39,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
     CounselorsModule,
     CounselorProfileModule,
     CounselorSchedulesModule,
+    PaymentProofsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
