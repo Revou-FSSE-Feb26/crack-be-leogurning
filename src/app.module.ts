@@ -4,6 +4,7 @@ import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { AppointmentsModule } from './modules/appointments/appointments.module';
+import { UsersModule } from './modules/users/users.module';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 
@@ -26,6 +27,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
     PrismaModule,
     AuthModule,
     AppointmentsModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
