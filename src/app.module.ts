@@ -11,6 +11,7 @@ import { CounselorsModule } from './modules/counselors/counselors.module';
 import { CounselorProfileModule } from './modules/counselor-profile/counselor-profile.module';
 import { CounselorSchedulesModule } from './modules/counselor-schedules/counselor-schedules.module';
 import { PaymentProofsModule } from './modules/payment-proofs/payment-proofs.module';
+import { ReviewsModule } from './modules/reviews/reviews.module';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 
@@ -40,6 +41,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
     CounselorProfileModule,
     CounselorSchedulesModule,
     PaymentProofsModule,
+    ReviewsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
