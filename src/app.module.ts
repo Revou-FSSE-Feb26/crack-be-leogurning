@@ -8,6 +8,7 @@ import { UsersModule } from './modules/users/users.module';
 import { SpecializationsModule } from './modules/specializations/specializations.module';
 import { SessionTypesModule } from './modules/session-types/session-types.module';
 import { CounselorsModule } from './modules/counselors/counselors.module';
+import { CounselorProfileModule } from './modules/counselor-profile/counselor-profile.module';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 
@@ -34,6 +35,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
     SpecializationsModule,
     SessionTypesModule,
     CounselorsModule,
+    CounselorProfileModule,
   ],
   controllers: [AppController],
   providers: [AppService],
