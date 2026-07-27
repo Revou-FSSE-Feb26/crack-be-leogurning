@@ -6,6 +6,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { AppointmentsModule } from './modules/appointments/appointments.module';
 import { UsersModule } from './modules/users/users.module';
 import { SpecializationsModule } from './modules/specializations/specializations.module';
+import { SessionTypesModule } from './modules/session-types/session-types.module';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 
@@ -30,6 +31,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
     AppointmentsModule,
     UsersModule,
     SpecializationsModule,
+    SessionTypesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
