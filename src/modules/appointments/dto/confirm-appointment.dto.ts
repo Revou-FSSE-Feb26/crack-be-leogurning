@@ -1,17 +1,9 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsString } from 'class-validator';
 
-export class UpdateAppointmentDto {
+export class ConfirmAppointmentDto {
   @ApiPropertyOptional({
-    description: 'Notes',
-    example: 'Updated session notes',
-  })
-  @IsOptional()
-  @IsString()
-  notes?: string;
-
-  @ApiPropertyOptional({
-    description: 'Meeting link',
+    description: 'Meeting link for online sessions',
     example: 'https://meet.google.com/abc-def-ghi',
   })
   @IsOptional()
